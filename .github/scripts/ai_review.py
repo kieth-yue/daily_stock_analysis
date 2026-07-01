@@ -1,3 +1,11 @@
+import os
+from openai import OpenAI
+
+# 讀取GitHub Actions傳入的環境變數，全域初始化客戶端
+sf_client = OpenAI(
+    api_key=os.getenv("SILICONFLOW_API_KEY"),
+    base_url=os.getenv("SILICONFLOW_BASE_URL")
+)
 #!/usr/bin/env python3
 """
 AI code review script used by GitHub Actions PR Review workflow.
