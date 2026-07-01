@@ -28,7 +28,7 @@ jobs:
     permissions:
       contents: write
 
-    steps:steps:
+    steps:
   - uses: actions/checkout@v4
   - name: 安裝依賴套件
     run: pip install openai
