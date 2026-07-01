@@ -12,11 +12,10 @@ on:
       - 'local/**'
       - '.github/**'
       - 'source/**'
-
 jobs:
   tag:
     runs-on: ubuntu-latest
-        env:
+    env:
       SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
       SILICONFLOW_BASE_URL: https://api.siliconflow.cn/v1
     # Default: NO tag. Only tag when commit message contains #patch, #minor, or #major.
@@ -24,18 +23,15 @@ jobs:
       contains(github.event.head_commit.message, '#patch') ||
       contains(github.event.head_commit.message, '#minor') ||
       contains(github.event.head_commit.message, '#major')
-
     permissions:
       contents: write
-
-steps:
-  - uses: actions/checkout@v4
-  - name: 安裝依賴套件
-    run: pip install openai
-  - name: Bump version and push tag
-    uses: anothrNick/github-tag-action@v1
-    env:
-      # 原有打標籤所需環境變數保留即可
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安裝依賴套件
+        run: pip install openai
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@v1
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
           DEFAULT_BUMP: patch
