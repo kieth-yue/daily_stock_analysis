@@ -6,7 +6,6 @@ import json
 import os
 import subprocess
 import traceback
-import os
 from openai import OpenAI
 # 讀取GitHub Actions傳入的環境變數，全域初始化客戶端
 sf_client = OpenAI(
