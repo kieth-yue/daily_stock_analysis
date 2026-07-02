@@ -28,11 +28,28 @@ jobs:
     runs-on: ubuntu-latest
     environment: STOCK_LIST
     timeout-minutes: 30
-
     steps:
-      - name: 随机延迟（避免固定时间访问）
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: 随机延迟(避免固定时间访问)
         run: sleep $((RANDOM % 60))
-      
+
+      - name: Run analysis
+        env:
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          OPENAI_BASE_URL:     ${{ secrets.OPENAI_BASE_URL }}
+          LITELLM_MODEL:       openai/${{ secrets.LITELLM_MODEL }}
+        run: python analysis.py
+
       - name: 检出代码
         uses: actions/checkout@v5
       
@@ -391,9 +408,9 @@ jobs:
           
         run: |
           # ===================== 【关键修复：脚本最开头强制注入SiliconFlow全套变量，解决Provider缺失】 =====================
-          export LITELLM_MODEL=siliconflow/deepseek-ai/DeepSeek-V4-Flash
-          export MODEL_NAME=siliconflow/deepseek-ai/DeepSeek-V4-Flash
-          export LITELLM_DEFAULT_PROVIDER=siliconflow
+          export LITELLM_MODEL=openai/deepseek-ai/DeepSeek-V4-Flash
+          export MODEL_NAME=openai/deepseek-ai/DeepSeek-V4-Flash
+          export LITELLM_DEFAULT_PROVIDER=openai
           export OPENAI_BASE_URL=https://api.siliconflow.cn/v1
           export OPENAI_API_KEY=${{ secrets.SILICONFLOW_API_KEY }}
           # 专属SiliconFlow独立密钥，绕过模型脱敏，强制识别提供商
@@ -418,7 +435,7 @@ jobs:
             echo "📝 使用 GitHub Actions Secrets/Variables 中的 LITELLM_CONFIG_YAML 配置"
             # 确保目录存在
             mkdir -p "$(dirname "$LITELLM_CONFIG")"
-            # 写入配置文件（覆盖已有文件）
+            # 写入配置文件（覆盖已有 file）
             echo "$LITELLM_CONFIG_YAML" > "$LITELLM_CONFIG"
             echo "✅ LITELLM 配置文件已写入: $LITELLM_CONFIG"
           fi
@@ -509,30 +526,7 @@ jobs:
           fi
       
       - name: 上传分析报告
-        uses: actions/upload-artifact@v6
-        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: analysis-reports-${{ github.run_number }}
-          path: |
-            reports/
-            logs/
-          retention-days: 30
-      
-      - name: 显示运行结果
-        if: always()
-        run: |
-          echo ""
-          echo "=========================================="
-          echo "📊 分析完成"
-          echo "=========================================="
-          if [ -d "reports" ] && [ "$(ls -A reports 2>/dev/null)" ]; then
-            echo "生成的报告:"
-            ls -la reports/
-          else
-            echo "⚠️ 未生成报告文件"
-          fi
-          echo ""
-          if [ -f "logs/stock_analysis_$(date +%Y%m%d).log" ]; then
-            echo "📜 最近日志（最后 30 行）:"
-            tail -30 logs/stock_analysis_*.log 2>/dev/null || echo "无日志"
-          fi
+          name: stock-analysis-reports
+          path: reports/
