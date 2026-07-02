@@ -47,7 +47,7 @@ jobs:
         env:
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
           OPENAI_BASE_URL:     ${{ secrets.OPENAI_BASE_URL }}
-          LITELLM_MODEL:       openai/${{ secrets.LITELLM_MODEL }}
+          LITELLM_MODEL:       ${{ secrets.LITELLM_MODEL }}
         run: python analysis.py
 
       - name: 检出代码
