@@ -1,9 +1,9 @@
 name: Auto Tag
 
-# 触发条件：当代码 push 到 main 分支时
+# 【唯一一段 on: 所有觸發放這裡，不要再新增第二個 on】
 on:
   push:
-    branches: [main]
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - '**.md'
@@ -12,31 +12,67 @@ on:
       - 'local/**'
       - '.github/**'
       - 'source/**'
+  # 手動觸發（可選，不需要就刪除這4行）
+  workflow_dispatch:
 
 jobs:
+  # 【唯一一段 jobs: 所有任務放這裡，不要再新增第二個 jobs】
   tag:
     runs-on: ubuntu-latest
-    # Default: NO tag. Only tag when commit message contains #patch, #minor, or #major.
+    env:
+      SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+      SILICONFLOW_BASE_URL: https://api.siliconflow.cn/v1
+      LITELLM_MODEL: deepseek-ai/DeepSeek-V4
     if: >-
       contains(github.event.head_commit.message, '#patch') ||
       contains(github.event.head_commit.message, '#minor') ||
       contains(github.event.head_commit.message, '#major')
-
     permissions:
       contents: write
-
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Bump version and push tag
-        uses: anothrNick/github-tag-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WITH_V: true
-          DEFAULT_BUMP: patch
-          INITIAL_VERSION: 2.1.0
-          PATCH_STRING_TOKEN: '#patch'
-          MINOR_STRING_TOKEN: '#minor'
-          MAJOR_STRING_TOKEN: '#major'
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version & create tag
+        run: |
+          # 提取commit訊息判斷版本類型
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          if [[ "$COMMIT_MSG" == *"#major"* ]]; then
+            BUMP="major"
+          elif [[ "$COMMIT_MSG" == *"#minor"* ]]; then
+            BUMP="minor"
+          else
+            BUMP="patch"
+          fi
+          
+          # 取得最新tag，無則從 v0.0.0 開始
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $LATEST_TAG"
+          
+          # 拆分版本號
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${LATEST_TAG#v}"
+          
+          if [ "$BUMP" = "major" ]; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          elif [ "$BUMP" = "minor" ]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
+          
+          NEW_TAG="v$MAJOR.$MINOR.$PATCH"
+          echo "New tag: $NEW_TAG"
+          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
+          
+          git tag "$NEW_TAG"
+          git push origin "$NEW_TAG"
