@@ -26,7 +26,7 @@ concurrency:
 jobs:
   analyze:
     runs-on: ubuntu-latest
-    environment: STOCK_LIST
+    environment: STOCK_LIST   # 如果不需要可以删除，但保留需先在仓库设置中创建
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -36,40 +36,24 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: 'pip'   # 添加缓存加速
 
-      - name: Install deps
+      - name: Install dependencies
         run: pip install -r requirements.txt
 
       - name: 随机延迟(避免固定时间访问)
         run: sleep $((RANDOM % 60))
 
+      - name: 创建必要目录（可选，若脚本自动创建可删除）
+        run: |
+          mkdir -p data logs reports
+
       - name: Run analysis
         env:
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
-          OPENAI_BASE_URL:     ${{ secrets.OPENAI_BASE_URL }}
-          LITELLM_MODEL:       ${{ secrets.LITELLM_MODEL }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          LITELLM_MODEL: ${{ secrets.LITELLM_MODEL }}
         run: python analysis.py
-
-      - name: 检出代码
-        uses: actions/checkout@v5
-      
-      - name: 设置 Python 环境
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-      
-      - name: 安装依赖
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-      
-      - name: 创建必要目录
-        run: |
-          mkdir -p data logs reports
-      
-      - name: 执行股票分析
-        env:
           # ==========================================
           # AI 配置
           # ==========================================
