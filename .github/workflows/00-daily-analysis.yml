@@ -4,7 +4,7 @@ on:
   # 定时触发 - 每天北京时间 18:00 (UTC 10:00)
   schedule:
     - cron: '0 10 * * 1-5'     # 周一到周五，UTC 10:00 = 北京时间 18:00
-
+  
   # 手动触发
   workflow_dispatch:
     inputs:
@@ -36,17 +36,10 @@ jobs:
     environment: STOCK_LIST
     # 添加超时限制，防止任务卡死
     timeout-minutes: ${{ fromJSON(vars.ANALYSIS_TIMEOUT_MINUTES || '30') }}
-    # 【正確全域AI變數，作用於整個Job容器】
-    env:
-      OPENAI_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
-      OPENAI_BASE_URL: https://api.siliconflow.cn/v1
-      LITELLM_MODEL: deepseek-ai/DeepSeek-V4
+    
     steps:
       - name: 随机延迟（避免固定时间访问）
         run: sleep $((RANDOM % 60))  # 随机延迟0-60秒启动
-        
-      - name: 安裝AI調用依賴
-        run: pip install openai
       
       - name: 检出代码
         uses: actions/checkout@v5
@@ -69,7 +62,7 @@ jobs:
       - name: 执行股票分析
         env:
           # ==========================================
-          # AI 配置（優先繼承Job全域變數，避免空值覆蓋）
+          # AI 配置
           # ==========================================
           GENERATION_BACKEND: ${{ vars.GENERATION_BACKEND || secrets.GENERATION_BACKEND }}
           GENERATION_FALLBACK_BACKEND: ${{ vars.GENERATION_FALLBACK_BACKEND || secrets.GENERATION_FALLBACK_BACKEND || 'litellm' }}
@@ -78,11 +71,11 @@ jobs:
           GENERATION_BACKEND_MAX_CONCURRENCY: ${{ vars.GENERATION_BACKEND_MAX_CONCURRENCY || secrets.GENERATION_BACKEND_MAX_CONCURRENCY }}
           LOCAL_CLI_BACKEND_MAX_CONCURRENCY: ${{ vars.LOCAL_CLI_BACKEND_MAX_CONCURRENCY || secrets.LOCAL_CLI_BACKEND_MAX_CONCURRENCY }}
           AGENT_GENERATION_BACKEND: ${{ vars.AGENT_GENERATION_BACKEND || secrets.AGENT_GENERATION_BACKEND }}
-          # LITELLM_CONFIG 優先讀取全域注入值，不會空覆蓋
+          # LITELLM_CONFIG
           LITELLM_CONFIG: ${{ vars.LITELLM_CONFIG || secrets.LITELLM_CONFIG }}
           LITELLM_CONFIG_YAML: ${{ vars.LITELLM_CONFIG_YAML || secrets.LITELLM_CONFIG_YAML }}
           LITELLM_API_KEY: ${{ secrets.LITELLM_API_KEY }}
-          LITELLM_MODEL: ${{ env.LITELLM_MODEL || vars.LITELLM_MODEL || secrets.LITELLM_MODEL }}
+          LITELLM_MODEL: ${{ vars.LITELLM_MODEL || secrets.LITELLM_MODEL }}
           LITELLM_FALLBACK_MODELS: ${{ vars.LITELLM_FALLBACK_MODELS || secrets.LITELLM_FALLBACK_MODELS }}
           AGENT_LITELLM_MODEL: ${{ vars.AGENT_LITELLM_MODEL || secrets.AGENT_LITELLM_MODEL }}
           VISION_MODEL: ${{ vars.VISION_MODEL || secrets.VISION_MODEL }}
@@ -113,10 +106,10 @@ jobs:
           # AIHubMix（优先于 OPENAI_API_KEY，自动适配 base_url，推荐国内用户）
           AIHUBMIX_KEY: ${{ secrets.AIHUBMIX_KEY }}
 
-          # OpenAI 兼容 API（優先繼承Job全域SiliconFlow配置）
-          OPENAI_API_KEY: ${{ env.OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
+          # OpenAI 兼容 API（备选）
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_API_KEYS: ${{ secrets.OPENAI_API_KEYS }}
-          OPENAI_BASE_URL: ${{ env.OPENAI_BASE_URL || vars.OPENAI_BASE_URL || secrets.OPENAI_BASE_URL }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL || secrets.OPENAI_BASE_URL }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || secrets.OPENAI_MODEL }}
 
           # DeepSeek
